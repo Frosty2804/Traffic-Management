@@ -161,8 +161,17 @@
                             light.lat,
                             light.lon,
                         ]);
+
+                        // Define a custom icon for the traffic lights
+                        const trafficLightIcon = L.icon({
+                            iconUrl: 'https://www.clipartmax.com/png/middle/56-563826_traffic-light-icons-traffic-signal-icon.png', // Update with your icon path
+                            iconSize: [30, 30], // Size of the icon [width, height]
+                            iconAnchor: [15, 30], // Point of the icon which will correspond to marker's location
+                            popupAnchor: [0, -30], // Point from which the popup should open relative to the iconAnchor
+                        });
+
                         trafficLights.forEach((coords) => {
-                            const marker = L.marker(coords)
+                            const marker = L.marker(coords, { icon: trafficLightIcon }) // Use the custom icon
                                 .addTo(markerClusterGroup)
                                 .bindPopup("Traffic Light");
 
@@ -193,7 +202,6 @@
                                         console.error("Error executing script:", error)
                                     );
                             });
-
                         });
                     })
                     .catch((error) =>
