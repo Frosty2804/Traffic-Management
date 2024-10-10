@@ -1,0 +1,18 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Road 1", "weight": 10 },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [74.0207, 15.2967],
+          [74.029, 15.302],
+          [74.035, 15.307],
+          [74.0377, 15.2993]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "geojson-path-finder": "^2.0.2"
+  }
+}

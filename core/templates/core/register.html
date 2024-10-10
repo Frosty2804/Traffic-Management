@@ -1,0 +1,82 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Register</title>
+        <link
+            rel="stylesheet"
+            href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        />
+    </head>
+    <body>
+        <div class="container">
+            <h2 class="mt-5">Register</h2>
+
+            <!-- Validation errors -->
+            {% if errors %}
+            <div class="alert alert-danger">
+                <ul>
+                    {% for error in errors.non_field_errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %} {% for field, field_errors in errors.items %}
+                    {% for error in field_errors %}
+                    <li>{{ field|capfirst }}: {{ error }}</li>
+                    {% endfor %} {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'register' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="username"
+                        name="username"
+                        required
+                    />
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input
+                        type="password"
+                        class="form-control"
+                        id="password"
+                        name="password"
+                        required
+                    />
+                </div>
+
+                <div class="mb-3">
+                    <label for="password_confirm" class="form-label"
+                        >Confirm Password</label
+                    >
+                    <input
+                        type="password"
+                        class="form-control"
+                        id="password_confirm"
+                        name="password_confirm"
+                        required
+                    />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Register</button>
+            </form>
+
+            <!-- Home button as a link -->
+            <a href="{% url 'home' %}" class="btn btn-secondary mt-3">Home</a>
+
+            <div class="mt-3">
+                <a href="{% url 'login' %}"
+                    >Already have an account? Login here.</a
+                >
+            </div>
+        </div>
+    </body>
+</html>
