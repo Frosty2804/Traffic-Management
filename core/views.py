@@ -11,12 +11,28 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import VehicleModel
 from .serializers import VehicleModelSerializer
 
-
+from django.http import JsonResponse
+import json
 class HomeViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
 
     def home_page(self, request):
-        return render(request, 'core/home.html')
+        if request.method == 'POST':
+            try:
+                body_unicode = request.body.decode('utf-8')
+                body_data = json.loads(body_unicode)
+                road_names = body_data.get('roads', [])
+
+                # Store road names in session
+                request.session['roads'] = road_names
+
+                return JsonResponse({'status': 'success', 'roads': road_names})
+            except json.JSONDecodeError:
+                return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+
+        # Handle GET request
+        roads = request.session.get('roads', [])
+        return render(request, 'core/home.html', {'roads': roads})
 
 
 class RegisterViewSet(viewsets.ModelViewSet):

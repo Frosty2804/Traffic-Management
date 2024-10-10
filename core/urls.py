@@ -16,7 +16,8 @@ urlpatterns = [
     path('', include(router.urls)),
 
     # Home page
-    path('home/', HomeViewSet.as_view({'get': 'home_page'}), name='home'),
+    path('home/', HomeViewSet.as_view({'post': 'home_page', 'get': 'home_page'}), name='home'),
+    # path('home/', HomeViewSet.as_view({'get': 'home_page'}), name='home'),
 
     # Djoser JWT authentication URLs
     path('auth/', include('djoser.urls')),
