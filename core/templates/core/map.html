@@ -10,6 +10,14 @@
             rel="stylesheet"
             href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"
         />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet.markercluster@latest/dist/MarkerCluster.css"
+        />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet.markercluster@latest/dist/MarkerCluster.Default.css"
+        />
 
         <style>
             body {
@@ -36,6 +44,7 @@
         <div id="map" style="width: 100%; height: 100vh"></div>
         <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
         <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+        <script src="https://unpkg.com/leaflet.markercluster@latest/dist/leaflet.markercluster.js"></script>
 
         <script>
             // Initialize the map centered over Goa
@@ -51,6 +60,8 @@
 
             // Coordinates for the routes
             var routes = {};
+            var markerClusterGroup = L.markerClusterGroup();
+            map.addLayer(markerClusterGroup); // Add the cluster group to the map
 
             // Populate the routes object and the route selector
             const vehicles = [
@@ -92,15 +103,17 @@
                     L.latLng(route.start[0], route.start[1]), // Start point
                     L.latLng(route.end[0], route.end[1]), // End point
                 ]);
-                fetchTrafficLights(selectedRoute); // Fetch traffic lights for the selected route
+                fetchTrafficLights(route.start, route.end); // Fetch traffic lights for the selected route
             }
 
-            // Handle route selection change
-            document
-                .getElementById("routeSelector")
-                .addEventListener("change", function () {
+            // Handle route selection change with debounce
+            let debounceTimer;
+            document.getElementById("routeSelector").addEventListener("change", function () {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
                     updateRoute(this.value);
-                });
+                }, 300); // Adjust delay as needed
+            });
 
             // Initialize with the first route if available
             if (vehicles.length > 0) {
@@ -120,15 +133,14 @@
             });
 
             // Function to fetch traffic light coordinates from Overpass API
-            function fetchTrafficLights(route) {
-                let bounds;
+            function fetchTrafficLights(startCoords, endCoords) {
+                // Clear previous markers from the cluster
+                markerClusterGroup.clearLayers();
 
-                // Set bounds based on the selected route
-                if (route === "panjim-margao") {
-                    bounds = "15.2967,73.8278,15.499,74.0207"; // Panjim to Margao
-                } else if (route === "mapusa-mumbai") {
-                    bounds = "15.5501,73.7518,19.076,72.8777"; // Mapusa to Mumbai
-                }
+                // Calculate bounds based on the selected route's start and end coordinates
+                const southWest = L.latLng(Math.min(startCoords[0], endCoords[0]), Math.min(startCoords[1], endCoords[1]));
+                const northEast = L.latLng(Math.max(startCoords[0], endCoords[0]), Math.max(startCoords[1], endCoords[1]));
+                const bounds = `${southWest.lat},${southWest.lng},${northEast.lat},${northEast.lng}`;
 
                 const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node["highway"="traffic_signals"](${bounds});out body;`;
 
@@ -139,22 +151,13 @@
                             light.lat,
                             light.lon,
                         ]);
-                        // Clear previous markers before adding new ones
-                        map.eachLayer((layer) => {
-                            if (layer instanceof L.Marker) {
-                                map.removeLayer(layer);
-                            }
-                        });
                         trafficLights.forEach((coords) => {
                             L.marker(coords)
-                                .addTo(map)
-                                .bindPopup("Traffic Light")
-                                .openPopup();
+                                .addTo(markerClusterGroup)
+                                .bindPopup("Traffic Light");
                         });
                     })
-                    .catch((error) =>
-                        console.error("Error fetching traffic lights:", error)
-                    );
+                    .catch((error) => console.error("Error fetching traffic lights:", error));
             }
         </script>
     </body>
