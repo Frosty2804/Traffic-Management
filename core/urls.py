@@ -1,7 +1,7 @@
 from django.urls import path, include
 from django.views.generic.base import RedirectView
 from rest_framework.routers import DefaultRouter
-from .views import RegisterViewSet, LoginViewSet, SupervisorViewSet, HomeViewSet, MapViewSet, VehicleViewSet
+from .views import RegisterViewSet, LoginViewSet, SupervisorViewSet, HomeViewSet, MapViewSet, VehicleViewSet, ExecuteScriptView
 
 router = DefaultRouter()
 router.register(r'auth/api/register', RegisterViewSet, basename='register-api')
@@ -27,4 +27,6 @@ urlpatterns = [
 
     path('supervisor/dashboard/', SupervisorViewSet.as_view({'get': 'supervisor_page'}), name='supervisor'),
     path('supervisor/dashboard/map', MapViewSet.as_view({'get': 'map_page'}), name='map'),
+
+    path('execute-script/', ExecuteScriptView.as_view(), name='execute_script'),
 ]
