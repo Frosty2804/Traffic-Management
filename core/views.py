@@ -2,14 +2,17 @@ from django.contrib import messages
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.shortcuts import redirect, render
+from django.views.generic import View
 from djoser.serializers import UserCreateSerializer
 from rest_framework import generics, permissions, status, viewsets
+from rest_framework.exceptions import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import VehicleModel
 from .serializers import VehicleModelSerializer
+import subprocess
 
 
 class HomeViewSet(viewsets.ViewSet):
@@ -117,3 +120,22 @@ class VehicleViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=201)  # Return success response with created data
         return Response(serializer.errors, status=400)  # Return errors if invalid data
+
+    # PUT request to update an existing vehicle entry
+
+
+class ExecuteScriptView(View):
+    def post(self, request):
+        script_path = 'scanner/app.py'
+
+        # Ensure the script path is safe and exists
+        if not os.path.exists(script_path):
+            return JsonResponse({'error': 'Script not found.'}, status=404)
+
+        try:
+            # Run the script in a subprocess
+            process = subprocess.Popen(['python3', script_path])
+            return JsonResponse({'message': 'Script is being executed.', 'pid': process.pid}, status=200)
+
+        except Exception as e:
+            return JsonResponse({'error': 'Failed to execute script.'}, status=500)

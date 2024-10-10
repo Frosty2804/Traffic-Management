@@ -125,7 +125,7 @@ DATABASES = {
         'NAME': 'traffic_management',
         'HOST': 'localhost',
         'USER': 'root',
-        'PASSWORD': 'password'
+        'PASSWORD': 'Sylvan123*'
     }
 }
 
