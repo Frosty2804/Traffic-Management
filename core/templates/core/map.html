@@ -1,164 +1,131 @@
-<!doctype html>
+{% load static %}
+<!DOCTYPE html>
 <html>
-    <head>
-        <title>Geolocation with Traffic Lights</title>
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
-        />
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"
-        />
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet.markercluster@latest/dist/MarkerCluster.css"
-        />
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet.markercluster@latest/dist/MarkerCluster.Default.css"
-        />
+<head>
+    <title>Geolocation with Moving Ambulance</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh; /* Ensure body takes full height */
+        }
+        #map {
+            width: 100%;
+            height: 100%; /* Ensure the map div takes full height */
+        }
+        #routeSelector {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 5px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <select id="routeSelector">
+        <!-- Options populated dynamically -->
+    </select>
+    <div id="map"></div>
 
-        <style>
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            #routeSelector {
-                position: absolute;
-                top: 10px;
-                left: 10px;
-                z-index: 1000; /* Ensure it stays above the map */
-                background: white;
-                padding: 5px;
-                border-radius: 5px;
-                box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-            }
-        </style>
-    </head>
+    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
-    <body>
-        <select id="routeSelector">
-            <!-- Options will be populated dynamically -->
-        </select>
-        <div id="map" style="width: 100%; height: 100vh"></div>
-        <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
-        <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-        <script src="https://unpkg.com/leaflet.markercluster@latest/dist/leaflet.markercluster.js"></script>
+    <script>
+        // Fetch vehicle routes from user input
+        const vehicles = [
+            {% for vehicle in vehicles %}
+            {
+                id: "{{ vehicle.number_plate }}", // Using number_plate as ID
+                start: [{{ vehicle.start_latitude }}, {{ vehicle.start_longitude }}],
+                end: [{{ vehicle.stop_latitude }}, {{ vehicle.stop_longitude }}],
+            },
+            {% endfor %}
+        ];
 
-        <script>
-            // Initialize the map centered over Goa
-            var map = L.map("map").setView([15.2993, 74.0377], 12); // Centered over Goa
+        // Initialize the map centered over Goa (default location)
+        var map = L.map('map').setView([15.2993, 74.0377], 12);
+        var mapLink = "<a href='http://openstreetmap.org'>OpenStreetMap</a>";
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Leaflet &copy; ' + mapLink,
+            maxZoom: 18
+        }).addTo(map);
 
-            // OpenStreetMap tile layer
-            var mapLink =
-                "<a href='http://openstreetmap.org'>OpenStreetMap</a>";
-            L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
-                attribution: "Leaflet &copy; " + mapLink + ", contributors",
-                maxZoom: 18,
-            }).addTo(map);
+        var taxiIcon = L.icon({
+            iconUrl: '{% static "core/img/taxi.png" %}', // Custom ambulance icon
+            iconSize: [70, 70]
+        });
 
-            // Coordinates for the routes
-            var routes = {};
-            var markerClusterGroup = L.markerClusterGroup();
-            map.addLayer(markerClusterGroup); // Add the cluster group to the map
+        var marker = L.marker([0, 0], { icon: taxiIcon }).addTo(map); // Initialize marker
 
-            // Populate the routes object and the route selector
-            const vehicles = [
-                {% for vehicle in vehicles %}
-                {
-                    id: "{{ vehicle.number_plate }}", // Using number_plate as ID
-                    start: [{{ vehicle.start_latitude }}, {{ vehicle.start_longitude }}],
-                    end: [{{ vehicle.stop_latitude }}, {{ vehicle.stop_longitude }}],
-                },
-                {% endfor %}
-            ];
+        // Function to update the route based on selected vehicle
+        function updateRoute(selectedVehicle) {
+            var route = vehicles.find(v => v.id === selectedVehicle);
+            if (route) {
+                var control = L.Routing.control({
+                    waypoints: [
+                        L.latLng(route.start[0], route.start[1]),
+                        L.latLng(route.end[0], route.end[1])
+                    ],
+                    routeWhileDragging: true
+                }).on('routesfound', function (e) {
+                    var roadNames = [];
 
-            vehicles.forEach((vehicle, index) => {
-                routes[vehicle.id] = {
-                    start: vehicle.start,
-                    end: vehicle.end,
-                };
+                    // Extract road names from instructions
+                    e.routes[0].instructions.forEach(function (instruction) {
+                        if (instruction.road) {
+                            roadNames.push(instruction.road);
+                        }
+                    });
 
-                // Populate route selector options
-                var option = document.createElement("option");
-                option.value = vehicle.id;
-                option.textContent = "Route " + (index + 1); // Change to Route 1, Route 2, etc.
-                document.getElementById("routeSelector").appendChild(option);
-            });
-
-            // Initialize routing control
-            var control = L.Routing.control({
-                waypoints: [],
-                routeWhileDragging: true,
-                router: L.Routing.osrmv1({
-                    serviceUrl: "https://router.project-osrm.org/route/v1", // Use OSRM service
-                }),
-            }).addTo(map);
-
-            // Function to update the route based on selection
-            function updateRoute(selectedRoute) {
-                var route = routes[selectedRoute];
-                control.setWaypoints([
-                    L.latLng(route.start[0], route.start[1]), // Start point
-                    L.latLng(route.end[0], route.end[1]), // End point
-                ]);
-                fetchTrafficLights(route.start, route.end); // Fetch traffic lights for the selected route
-            }
-
-            // Handle route selection change with debounce
-            let debounceTimer;
-            document.getElementById("routeSelector").addEventListener("change", function () {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    updateRoute(this.value);
-                }, 300); // Adjust delay as needed
-            });
-
-            // Initialize with the first route if available
-            if (vehicles.length > 0) {
-                updateRoute(vehicles[0].id); // Use the number plate as the initial route
-            }
-
-            // Listen for route found event to get the main road name
-            control.on("routesfound", function (e) {
-                var routes = e.routes;
-                if (routes.length > 0) {
-                    // Get the first instruction which usually indicates the main road
-                    var firstInstruction = routes[0].instructions[0].text;
-
-                    // Log the main road name to the console
-                    console.log("Main road along the route: " + firstInstruction);
-                }
-            });
-
-            // Function to fetch traffic light coordinates from Overpass API
-            function fetchTrafficLights(startCoords, endCoords) {
-                // Clear previous markers from the cluster
-                markerClusterGroup.clearLayers();
-
-                // Calculate bounds based on the selected route's start and end coordinates
-                const southWest = L.latLng(Math.min(startCoords[0], endCoords[0]), Math.min(startCoords[1], endCoords[1]));
-                const northEast = L.latLng(Math.max(startCoords[0], endCoords[0]), Math.max(startCoords[1], endCoords[1]));
-                const bounds = `${southWest.lat},${southWest.lng},${northEast.lat},${northEast.lng}`;
-
-                const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node["highway"="traffic_signals"](${bounds});out body;`;
-
-                fetch(overpassUrl)
-                    .then((response) => response.json())
-                    .then((data) => {
-                        const trafficLights = data.elements.map((light) => [
-                            light.lat,
-                            light.lon,
-                        ]);
-                        trafficLights.forEach((coords) => {
-                            L.marker(coords)
-                                .addTo(markerClusterGroup)
-                                .bindPopup("Traffic Light");
-                        });
+                    // Post the road names to the Django backend
+                    var jsonData = { roads: roadNames };
+                    fetch('/home/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify(jsonData)
                     })
-                    .catch((error) => console.error("Error fetching traffic lights:", error));
+                    .then(response => response.json())
+                    .then(data => {
+                        // Open the home page with updated road data
+                        window.open('/home/', '_blank');
+                    });
+
+                    // Move the ambulance along the route
+                    e.routes[0].coordinates.forEach(function (coord, index) {
+                        setTimeout(function () {
+                            marker.setLatLng([coord.lat, coord.lng]);
+                        }, 1000 * index); // Delay the movement
+                    });
+                }).addTo(map);
             }
-        </script>
-    </body>
+        }
+
+        // Populate the route selector with vehicle routes
+        vehicles.forEach((vehicle, index) => {
+            var option = document.createElement("option");
+            option.value = vehicle.id;
+            option.textContent = "Route " + (index + 1); // Display Route 1, Route 2, etc.
+            document.getElementById("routeSelector").appendChild(option);
+        });
+
+        // Start with the first route automatically if available
+        if (vehicles.length > 0) {
+            updateRoute(vehicles[0].id); // Auto-start first route
+        }
+
+        // Update route when a new route is selected from the dropdown
+        document.getElementById("routeSelector").addEventListener("change", function () {
+            updateRoute(this.value);
+        });
+    </script>
+</body>
 </html>
