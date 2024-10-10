@@ -10,6 +10,33 @@
             rel="stylesheet"
             href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
         />
+        <style>
+            body {
+                background: linear-gradient(to bottom right, #d7d6d6, #ffffff); /* Gradient from white to pinkish */
+                font-family: Arial, sans-serif;
+            }
+            .container {
+                max-width: 400px;
+                margin-top: 100px;
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+            h2 {
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .alert {
+                margin-bottom: 20px;
+            }
+            .btn-primary {
+                width: 100%;
+            }
+            .mt-3 {
+                text-align: center;
+            }
+        </style>
     </head>
     <body>
         <div class="container">
@@ -21,10 +48,12 @@
                 <ul>
                     {% for error in errors.non_field_errors %}
                     <li>{{ error }}</li>
-                    {% endfor %} {% for field, field_errors in errors.items %}
+                    {% endfor %}
+                    {% for field, field_errors in errors.items %}
                     {% for error in field_errors %}
                     <li>{{ field|capfirst }}: {{ error }}</li>
-                    {% endfor %} {% endfor %}
+                    {% endfor %}
+                    {% endfor %}
                 </ul>
             </div>
             {% endif %}
@@ -54,9 +83,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="password_confirm" class="form-label"
-                        >Confirm Password</label
-                    >
+                    <label for="password_confirm" class="form-label">Confirm Password</label>
                     <input
                         type="password"
                         class="form-control"
@@ -73,9 +100,7 @@
             <a href="{% url 'home' %}" class="btn btn-secondary mt-3">Home</a>
 
             <div class="mt-3">
-                <a href="{% url 'login' %}"
-                    >Already have an account? Login here.</a
-                >
+                <a href="{% url 'login' %}">Already have an account? Login here.</a>
             </div>
         </div>
     </body>

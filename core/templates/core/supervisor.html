@@ -5,77 +5,116 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Supervisor Dashboard</title>
         {% load static %}
+        <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f4f4f4;
+                color: #333;
+            }
+            header {
+                background-color: #007bff;
+                color: white;
+                padding: 10px 20px;
+                text-align: center;
+            }
+            h1 {
+                margin: 20px 0;
+            }
+            .container {
+                max-width: 800px;
+                margin: auto;
+                padding: 20px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+            p {
+                font-size: 1.1em;
+                margin: 15px 0;
+            }
+            form {
+                margin: 20px 0;
+                padding: 15px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                background: #f9f9f9;
+            }
+            label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
+            input[type="text"] {
+                width: calc(100% - 22px);
+                padding: 10px;
+                margin-bottom: 15px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+            }
+            .button-container {
+                display: flex;
+                justify-content: space-between;
+            }
+            button, .btn-secondary {
+                background-color: #007bff;
+                color: white;
+                padding: 10px 15px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+                width: 48%;
+            }
+            button:hover, .btn-secondary:hover {
+                background-color: #0056b3;
+            }
+            .btn-secondary {
+                background-color: #6c757d;
+            }
+            .btn-secondary:hover {
+                background-color: #5a6268;
+            }
+        </style>
     </head>
     <body>
-        <h1>Supervisor Dashboard</h1>
-        <p>Welcome to the supervisor dashboard.</p>
+        <header>
+            <h1>Supervisor Dashboard</h1>
+        </header>
+        
+        <div class="container">
+            <p>Welcome to the supervisor dashboard.</p>
 
-        <p id="loginStatus"></p>
+            <p id="loginStatus"></p>
 
-        <button id="logoutButton">Logout</button>
+            <a href="{% url 'home' %}" class="btn-secondary" id="logoutButton">Logout</a>
 
-        <h2>Create Vehicle Entry</h2>
-        <form id="vehicleForm" method="POST">
-            <label for="number_plate">Number Plate:</label>
-            <input
-                type="text"
-                id="number_plate"
-                name="number_plate"
-                required
-                maxlength="10"
-            />
 
-            <label for="start_longitude">Start Longitude:</label>
-            <input
-                type="text"
-                id="start_longitude"
-                name="start_longitude"
-                required
-            />
+            <h2>Create Vehicle Entry</h2>
+            <form id="vehicleForm" method="POST">
+                {% csrf_token %}
+                <label for="number_plate">Number Plate:</label>
+                <input type="text" id="number_plate" name="number_plate" required maxlength="10" />
 
-            <label for="stop_longitude">Stop Longitude:</label>
-            <input
-                type="text"
-                id="stop_longitude"
-                name="stop_longitude"
-                required
-            />
+                <label for="start_latitude">Start Latitude:</label>
+                <input type="text" id="start_latitude" name="start_latitude" required />
 
-            <label for="start_latitude">Start Latitude:</label>
-            <input
-                type="text"
-                id="start_latitude"
-                name="start_latitude"
-                required
-            />
+                <label for="start_longitude">Start Longitude:</label>
+                <input type="text" id="start_longitude" name="start_longitude" required />
 
-            <label for="stop_latitude">Stop Latitude:</label>
-            <input
-                type="text"
-                id="stop_latitude"
-                name="stop_latitude"
-                required
-            />
+                <label for="stop_latitude">Stop Latitude:</label>
+                <input type="text" id="stop_latitude" name="stop_latitude" required />
 
-            <button type="submit">Submit</button>
-        </form>
+                <label for="stop_longitude">Stop Longitude:</label>
+                <input type="text" id="stop_longitude" name="stop_longitude" required />
 
-        <h2>Delete Vehicle Entry</h2>
-        <form id="deleteVehicleForm">
-            <label for="delete_number_plate">Number Plate:</label>
-            <input
-                type="text"
-                id="delete_number_plate"
-                name="delete_number_plate"
-                required
-                maxlength="10"
-            />
-            <button type="submit">Delete</button>
-        </form>
-
-        <div class="mt-3">
-            <!-- Button to view maps -->
-            <a href="{% url 'map' %}" class="btn btn-secondary">View Maps</a>
+                <div class="button-container">
+                    <button type="submit">Submit</button>
+                    <a href="{% url 'map' %}" class="btn-secondary">View Maps</a>
+                </div>
+            </form>
         </div>
 
         <script src="{% static 'core/js/supervisor.js' %}"></script>

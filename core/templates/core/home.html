@@ -1,3 +1,305 @@
+
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home</title>
+    <link rel="stylesheet" href="{% static 'core/css/home.css' %}" />
+    <style>
+        /* Override the body background specifically for the officer's home page */
+        body {
+            background: white;
+            min-height: 100vh;
+            min-width: 100vw;
+            display: block;
+            overflow-x: hidden;
+        }
+
+        /* Notice board text size */
+        .notice-board h1 {
+            font-size: 36px; /* Increased font size for the heading */
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .notice-board .d-flex h4 {
+            font-size: 28px; /* Increase size for "EMERGENCY PANEL" */
+            font-weight: bold;
+        }
+
+        .notice-board .media-body {
+            font-size: 18px; /* Increase size for emergency messages */
+        }
+
+        .notice-board strong {
+            font-size: 20px; /* Increase size for emergency message titles */
+        }
+
+        .notice-board h6 {
+            font-size: 22px; /* Increase size for "Recent updates" */
+            font-weight: bold;
+        }
+
+        /* Style for the rest of the file upload form */
+        .drop-container {
+            border: 2px dotted #ccc;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .upload-button {
+            width: 300px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        #file-name-indicator {
+            width: 300px;
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 12px;
+            color: #666;
+        }
+
+        #message {
+            color: green;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        #loading {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .spinner {
+            margin-top: 20px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #007bff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .large-button {
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        .large-button:hover {
+            background-color: #0056b3;
+        }
+
+        .divider {
+            height: 2px;
+            background-color: #3498db;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .text-white-50 {
+            color: rgba(255, 255, 255, .5);
+        }
+
+        .bg-blue {
+            background-color: #00b5ec;
+        }
+
+        .border-bottom {
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .box-shadow {
+            box-shadow: 0 .25rem .75rem rgba(0, 0, 0, 0.05);
+        }
+
+        /* Additional styles for the location tracking button */
+        .location-tracking {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #trackingButton {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        #trackingButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+    {% csrf_token %}
+    <header class="header">
+        <nav class="navbar">
+            <a href="#" class="nav-logo">Dashboard(The Team)</a>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="{% url 'login' %}" class="nav-link">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'register' %}" class="nav-link">Register</a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </nav>
+    </header>
+
+    <div class="centered-text">
+        <h1>NOTICE BOARD</h1>
+    </div>
+
+    <main role="main" class="container notice-board">
+        <div class="d-flex align-items-center p-3 my-3 text-white-50 bg-blue rounded box-shadow">
+            <div class="lh-100">
+                <h4 class="mb-0 text-white lh-100">EMERGENCY</h4>
+            </div>
+        </div>
+
+        <div class="my-3 p-3 bg-white rounded box-shadow">
+            <h6 class="border-bottom border-gray pb-2 mb-0">Recent updates</h6>
+
+            <!-- Emergency messages will be dynamically generated here -->
+            {% if roads %}
+                {% for road in roads %}
+                    <div class="media text-muted pt-3">
+                        <p class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
+                            <strong class="d-block text-gray-dark">@EMERGENCY</strong>
+                            The {{ road }} will be given more priority due to ambulance; please give way.
+                        </p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="media text-muted pt-3">
+                    <p class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
+                        <strong class="d-block text-gray-dark">@MADGAO</strong>
+                        An ambulance is on Murida road heading towards the Victor Hospital. Please expect changes in traffic signal timings to accommodate its priority.
+                    </p>
+                </div>
+                <div class="media text-muted pt-3">
+                    <p class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
+                        <strong class="d-block text-gray-dark">@MADGAO</strong>
+                        Emergency vehicle detected on Panvel Highway heading towards Hospicio. Traffic signals are adjusted to allow its smooth passage.
+                    </p>
+                </div>
+                <div class="media text-muted pt-3">
+                    <p class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
+                        <strong class="d-block text-gray-dark">@MAPUSA</strong>
+                        Ambulance heading towards Galaxy Hospital Mapusa via Camurlim road. Signal timings have been modified to prioritize emergency response.
+                    </p>
+                </div>
+                <div class="media text-muted pt-3">
+                    <p class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
+                        <strong class="d-block text-gray-dark">@EMERGENCY</strong>
+                        An ambulance is on its way along Riverside Drive. Traffic lights are now synchronized to ensure quick response.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+
+        <small class="d-block text-right mt-3">
+            <a href="#">All messages</a>
+        </small>
+    </main>
+
+    <div class="centered-text">
+        <div class="location-tracking">
+            <button id="trackingButton"><h2>Start Tracking Location</h2></button>
+            <div id="locationDisplay"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("trackingButton").addEventListener("click", function() {
+            // Implement your tracking functionality here
+            alert("Tracking location functionality is not yet implemented.");
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <!DOCTYPE html>
+<html>
+
+<head>
+    <title>Roads</title>
+</head>
+
+<body>
+    <h1>Road Names</h1>
+    <ul>
+        {% for road in roads %}
+            <li>{{ road }}</li>
+        {% empty %}
+            <li>No roads to display</li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html> -->
+
+
+
+
+
+
+
+
+<!-- 
 {% load static %}
 
 <!doctype html>
@@ -221,4 +523,4 @@
         </div>
 
     </body>
-</html>
+</html> -->
