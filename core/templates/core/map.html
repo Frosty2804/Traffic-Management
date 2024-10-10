@@ -28,7 +28,7 @@
                 position: absolute;
                 top: 10px;
                 left: 10px;
-                z-index: 1000; /* Ensure it stays above the map */
+                z-index: 1000;
                 background: white;
                 padding: 5px;
                 border-radius: 5px;
@@ -42,6 +42,14 @@
             <!-- Options will be populated dynamically -->
         </select>
         <div id="map" style="width: 100%; height: 100vh"></div>
+
+        <!-- Django Template CSRF Token -->
+        <input
+            type="hidden"
+            name="csrfmiddlewaretoken"
+            value="{{ csrf_token }}"
+        />
+
         <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
         <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
         <script src="https://unpkg.com/leaflet.markercluster@latest/dist/leaflet.markercluster.js"></script>
@@ -51,8 +59,7 @@
             var map = L.map("map").setView([15.2993, 74.0377], 12); // Centered over Goa
 
             // OpenStreetMap tile layer
-            var mapLink =
-                "<a href='http://openstreetmap.org'>OpenStreetMap</a>";
+            var mapLink = "<a href='http://openstreetmap.org'>OpenStreetMap</a>";
             L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
                 attribution: "Leaflet &copy; " + mapLink + ", contributors",
                 maxZoom: 18,
@@ -67,7 +74,7 @@
             const vehicles = [
                 {% for vehicle in vehicles %}
                 {
-                    id: "{{ vehicle.number_plate }}", // Using number_plate as ID
+                    id: "{{ vehicle.number_plate }}",
                     start: [{{ vehicle.start_latitude }}, {{ vehicle.start_longitude }}],
                     end: [{{ vehicle.stop_latitude }}, {{ vehicle.stop_longitude }}],
                 },
@@ -83,7 +90,7 @@
                 // Populate route selector options
                 var option = document.createElement("option");
                 option.value = vehicle.id;
-                option.textContent = "Route " + (index + 1); // Change to Route 1, Route 2, etc.
+                option.textContent = "Route " + (index + 1);
                 document.getElementById("routeSelector").appendChild(option);
             });
 
@@ -92,7 +99,7 @@
                 waypoints: [],
                 routeWhileDragging: true,
                 router: L.Routing.osrmv1({
-                    serviceUrl: "https://router.project-osrm.org/route/v1", // Use OSRM service
+                    serviceUrl: "https://router.project-osrm.org/route/v1",
                 }),
             }).addTo(map);
 
@@ -117,17 +124,14 @@
 
             // Initialize with the first route if available
             if (vehicles.length > 0) {
-                updateRoute(vehicles[0].id); // Use the number plate as the initial route
+                updateRoute(vehicles[0].id);
             }
 
             // Listen for route found event to get the main road name
             control.on("routesfound", function (e) {
                 var routes = e.routes;
                 if (routes.length > 0) {
-                    // Get the first instruction which usually indicates the main road
                     var firstInstruction = routes[0].instructions[0].text;
-
-                    // Log the main road name to the console
                     console.log("Main road along the route: " + firstInstruction);
                 }
             });
@@ -138,8 +142,14 @@
                 markerClusterGroup.clearLayers();
 
                 // Calculate bounds based on the selected route's start and end coordinates
-                const southWest = L.latLng(Math.min(startCoords[0], endCoords[0]), Math.min(startCoords[1], endCoords[1]));
-                const northEast = L.latLng(Math.max(startCoords[0], endCoords[0]), Math.max(startCoords[1], endCoords[1]));
+                const southWest = L.latLng(
+                    Math.min(startCoords[0], endCoords[0]),
+                    Math.min(startCoords[1], endCoords[1])
+                );
+                const northEast = L.latLng(
+                    Math.max(startCoords[0], endCoords[0]),
+                    Math.max(startCoords[1], endCoords[1])
+                );
                 const bounds = `${southWest.lat},${southWest.lng},${northEast.lat},${northEast.lng}`;
 
                 const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node["highway"="traffic_signals"](${bounds});out body;`;
@@ -152,12 +162,48 @@
                             light.lon,
                         ]);
                         trafficLights.forEach((coords) => {
-                            L.marker(coords)
+                            const marker = L.marker(coords)
                                 .addTo(markerClusterGroup)
                                 .bindPopup("Traffic Light");
+
+                            // Add a click event listener to the marker
+                            marker.on("click", function () {
+                                // Execute the script by sending a request to the Django backend
+                                fetch("{% url 'execute-script' %}", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "X-CSRFToken": getCsrfToken(), // Ensure CSRF token for POST requests
+                                    },
+                                    body: JSON.stringify({
+                                        latitude: coords[0],
+                                        longitude: coords[1],
+                                    }),
+                                })
+                                    .then((response) => response.json())
+                                    .then((data) => {
+                                        console.log("Script executed successfully:", data);
+
+                                        // Automatically open a new tab if a redirect URL is provided
+                                        if (data.redirect_url) {
+                                            window.open(data.redirect_url, '_blank'); // Open in a new tab
+                                        }
+                                    })
+                                    .catch((error) =>
+                                        console.error("Error executing script:", error)
+                                    );
+                            });
+
                         });
                     })
-                    .catch((error) => console.error("Error fetching traffic lights:", error));
+                    .catch((error) =>
+                        console.error("Error fetching traffic lights:", error)
+                    );
+            }
+
+            // Function to get CSRF token for POST requests (Django CSRF protection)
+            function getCsrfToken() {
+                return document.querySelector('[name=csrfmiddlewaretoken]').value;
             }
         </script>
     </body>

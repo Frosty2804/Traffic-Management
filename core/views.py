@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.http.response import os
 from django.shortcuts import redirect, render
 from django.views.generic import View
 from djoser.serializers import UserCreateSerializer
@@ -123,10 +124,9 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     # PUT request to update an existing vehicle entry
 
-
 class ExecuteScriptView(View):
     def post(self, request):
-        script_path = 'scanner/app.py'
+        script_path = 'scanner/app.py'  # Adjust to the correct script location
 
         # Ensure the script path is safe and exists
         if not os.path.exists(script_path):
@@ -135,7 +135,13 @@ class ExecuteScriptView(View):
         try:
             # Run the script in a subprocess
             process = subprocess.Popen(['python3', script_path])
-            return JsonResponse({'message': 'Script is being executed.', 'pid': process.pid}, status=200)
+
+            # Set the redirect URL to localhost:5000
+            return JsonResponse({
+                'message': 'Script is being executed.',
+                'pid': process.pid,
+                'redirect_url': 'http://127.0.0.1:5000/'  # Redirect to localhost:5000
+            }, status=200)
 
         except Exception as e:
-            return JsonResponse({'error': 'Failed to execute script.'}, status=500)
+            return JsonResponse({'error': 'Failed to execute script.', 'details': str(e)}, status=500)

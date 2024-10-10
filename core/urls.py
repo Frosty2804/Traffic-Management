@@ -28,5 +28,5 @@ urlpatterns = [
     path('supervisor/dashboard/', SupervisorViewSet.as_view({'get': 'supervisor_page'}), name='supervisor'),
     path('supervisor/dashboard/map', MapViewSet.as_view({'get': 'map_page'}), name='map'),
 
-    path('execute-script/', ExecuteScriptView.as_view(), name='execute_script'),
+    path('execute-script/', ExecuteScriptView.as_view(), name='execute-script'),
 ]
