@@ -58,7 +58,8 @@
                 display: flex;
                 justify-content: space-between;
             }
-            button, .btn-secondary {
+            button,
+            .btn-secondary {
                 background-color: #007bff;
                 color: white;
                 padding: 10px 15px;
@@ -68,7 +69,8 @@
                 font-size: 16px;
                 width: 48%;
             }
-            button:hover, .btn-secondary:hover {
+            button:hover,
+            .btn-secondary:hover {
                 background-color: #0056b3;
             }
             .btn-secondary {
@@ -83,36 +85,49 @@
         <header>
             <h1>Supervisor Dashboard</h1>
         </header>
-        
+
         <div class="container">
             <p>Welcome to the supervisor dashboard.</p>
 
             <p id="loginStatus"></p>
 
-            <a href="{% url 'home' %}" class="btn-secondary" id="logoutButton">Logout</a>
-
+            <a href="{% url 'home' %}" class="btn-secondary" id="logoutButton"
+                >Logout</a
+            >
 
             <h2>Create Vehicle Entry</h2>
             <form id="vehicleForm" method="POST">
                 {% csrf_token %}
+
                 <label for="number_plate">Number Plate:</label>
-                <input type="text" id="number_plate" name="number_plate" required maxlength="10" />
+                <input
+                    type="text"
+                    id="number_plate"
+                    name="number_plate"
+                    required
+                />
 
-                <label for="start_latitude">Start Latitude:</label>
-                <input type="text" id="start_latitude" name="start_latitude" required />
+                <label for="start_location">Start Location:</label>
+                <input
+                    type="text"
+                    id="start_location"
+                    name="start_location"
+                    required
+                />
 
-                <label for="start_longitude">Start Longitude:</label>
-                <input type="text" id="start_longitude" name="start_longitude" required />
-
-                <label for="stop_latitude">Stop Latitude:</label>
-                <input type="text" id="stop_latitude" name="stop_latitude" required />
-
-                <label for="stop_longitude">Stop Longitude:</label>
-                <input type="text" id="stop_longitude" name="stop_longitude" required />
+                <label for="end_location">End Location:</label>
+                <input
+                    type="text"
+                    id="end_location"
+                    name="end_location"
+                    required
+                />
 
                 <div class="button-container">
                     <button type="submit">Submit</button>
-                    <a href="{% url 'map' %}" class="btn-secondary">View Maps</a>
+                    <a href="{% url 'map' %}" class="btn-secondary"
+                        >View Maps</a
+                    >
                 </div>
             </form>
         </div>

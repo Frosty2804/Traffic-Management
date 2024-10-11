@@ -1,26 +1,42 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from django.http.response import os
+from django.http.response import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.generic import View
 from djoser.serializers import UserCreateSerializer
-from rest_framework import generics, permissions, status, viewsets
-from rest_framework.exceptions import JsonResponse
+from rest_framework import status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .models import VehicleModel
 from .serializers import VehicleModelSerializer
+import os
 import subprocess
 
-
+from django.http import JsonResponse
+import json
 class HomeViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
 
     def home_page(self, request):
-        return render(request, 'core/home.html')
+        if request.method == 'POST':
+            try:
+                body_unicode = request.body.decode('utf-8')
+                body_data = json.loads(body_unicode)
+                road_names = body_data.get('roads', [])
+
+                # Store road names in session
+                request.session['roads'] = road_names
+
+                return JsonResponse({'status': 'success', 'roads': road_names})
+            except json.JSONDecodeError:
+                return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+
+        # Handle GET request
+        roads = request.session.get('roads', [])
+        return render(request, 'core/home.html', {'roads': roads})
+
 
 
 class RegisterViewSet(viewsets.ModelViewSet):
@@ -33,7 +49,7 @@ class RegisterViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
             messages.success(request, 'User created successfully!')
-            return redirect('login')  # Redirect to login page after registration
+            return redirect('login')
         else:
             return render(request, 'core/register.html', {'errors': serializer.errors})
 
@@ -61,7 +77,7 @@ class LoginViewSet(viewsets.ViewSet):
                 value=access_token,
                 httponly=True,
                 samesite='Lax',
-                secure= False,
+                secure=False,
             )
             return response
         else:
@@ -72,75 +88,48 @@ class LoginViewSet(viewsets.ViewSet):
 
 
 class SupervisorViewSet(viewsets.ViewSet):
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny]  # Ensure only authenticated users can access
 
-    # GET request to render the supervisor dashboard
     def supervisor_page(self, request):
         return render(request, 'core/supervisor.html')
 
-    # POST request to handle form submission or any data entry
-    def post(self, request):
-        # Handle the POST logic here
-        data = request.data  # Get the POST data from the request
+    def create(self, request):
+        serializer = VehicleModelSerializer(data=request.data)
 
-        # Initialize the serializer with the data
-        serializer = VehicleModelSerializer(data=data)
-
-        # Validate the data
         if serializer.is_valid():
-            # Save the data to the database
             serializer.save()
-            # Redirect to the supervisor dashboard after success
-            return redirect('/supervisor/dashboard')  # Redirect after successful submission
-        else:
-            # If the data is invalid, render the form again with errors
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+            return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)  # Return success response with created data
+        return JsonResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MapViewSet(viewsets.ViewSet):
     permission_classes = [AllowAny]
 
     def map_page(self, request):
-        # Fetch all vehicle entries from the database
-        vehicles = list(VehicleModel.objects.all())
-        for vehicle in vehicles:
-            print(vehicle.start_latitude, vehicle.start_longitude, vehicle.stop_latitude, vehicle.stop_longitude)
+        vehicles = VehicleModel.objects.all()
         return render(request, 'core/map.html', {'vehicles': vehicles})
 
 
 class VehicleViewSet(viewsets.ModelViewSet):
     queryset = VehicleModel.objects.all()
     serializer_class = VehicleModelSerializer
-    permission_classes = [IsAuthenticated]  # Ensure only authenticated users can access
+    permission_classes = [AllowAny]
 
-    # POST request to create a new vehicle entry
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)  # Return success response with created data
-        return Response(serializer.errors, status=400)  # Return errors if invalid data
 
-    # PUT request to update an existing vehicle entry
 
 class ExecuteScriptView(View):
     def post(self, request):
-        script_path = 'scanner/app.py'  # Adjust to the correct script location
+        script_path = 'scanner/app.py'
 
-        # Ensure the script path is safe and exists
         if not os.path.exists(script_path):
             return JsonResponse({'error': 'Script not found.'}, status=404)
 
         try:
-            # Run the script in a subprocess
-            process = subprocess.Popen(['python3', script_path])
-
-            # Set the redirect URL to localhost:5000
+            process = subprocess.Popen(['python', script_path])
             return JsonResponse({
                 'message': 'Script is being executed.',
                 'pid': process.pid,
-                'redirect_url': 'http://127.0.0.1:5000/'  # Redirect to localhost:5000
+                'redirect_url': 'http://127.0.0.1:5000/'
             }, status=200)
 
         except Exception as e:

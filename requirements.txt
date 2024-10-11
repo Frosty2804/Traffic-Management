@@ -22,7 +22,6 @@ django-templated-mail==1.1.1
 djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
 djoser==2.2.3
-dnf==4.21.1
 filelock==3.16.0
 Flask==3.0.3
 fonttools==4.54.1
@@ -33,8 +32,6 @@ itsdangerous==2.2.0
 Jinja2==3.1.4
 joblib==1.4.2
 kiwisolver==1.4.7
-libcomps==0.1.20
-libdnf==0.73.3
 MarkupSafe==3.0.1
 marshmallow==3.22.0
 matplotlib==3.9.2
@@ -62,7 +59,6 @@ pytz==2024.2
 PyYAML==6.0.2
 requests==2.32.3
 requests-oauthlib==2.0.0
-rpm==4.19.1.1
 scikit-learn==1.5.2
 scipy==1.14.1
 setuptools==75.1.0

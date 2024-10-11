@@ -86,7 +86,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'core.middleware.JwtCookieMiddleware',
+    # 'core.middleware.JwtCookieMiddleware',
 ]
 
 ROOT_URLCONF = 'TrafficManagement.urls'
@@ -125,7 +125,7 @@ DATABASES = {
         'NAME': 'traffic_management',
         'HOST': 'localhost',
         'USER': 'root',
-        'PASSWORD': 'Sylvan123*'
+        'PASSWORD': 'password'
     }
 }
 

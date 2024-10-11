@@ -1,218 +1,236 @@
+{% load static %}
 <!doctype html>
 <html>
-    <head>
-        <title>Geolocation with Traffic Lights</title>
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
-        />
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"
-        />
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet.markercluster@latest/dist/MarkerCluster.css"
-        />
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet.markercluster@latest/dist/MarkerCluster.Default.css"
-        />
+<head>
+    <title>Geolocation with Traffic Lights and Moving Ambulance</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@latest/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@latest/dist/MarkerCluster.Default.css" />
 
-        <style>
-            body {
-                margin: 0;
-                padding: 0;
-            }
-            #routeSelector {
-                position: absolute;
-                top: 10px;
-                left: 10px;
-                z-index: 1000;
-                background: white;
-                padding: 5px;
-                border-radius: 5px;
-                box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-            }
-        </style>
-    </head>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        #routeSelector {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
 
-    <body>
-        <select id="routeSelector">
+<body>
+    <div id="routeSelector">
+        <label for="routeSelect">Select a Route:</label>
+        <select id="routeSelect">
             <!-- Options will be populated dynamically -->
         </select>
-        <div id="map" style="width: 100%; height: 100vh"></div>
+    </div>
+    <div id="map"></div>
 
-        <!-- Django Template CSRF Token -->
-        <input
-            type="hidden"
-            name="csrfmiddlewaretoken"
-            value="{{ csrf_token }}"
-        />
+    <!-- Django Template CSRF Token -->
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
 
-        <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
-        <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-        <script src="https://unpkg.com/leaflet.markercluster@latest/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@latest/dist/leaflet.markercluster.js"></script>
 
-        <script>
-            // Initialize the map centered over Goa
-            var map = L.map("map").setView([15.2993, 74.0377], 12); // Centered over Goa
+    <script>
+        // Initialize the map centered over Goa
+        var map = L.map("map").setView([15.2993, 74.0377], 12);
 
-            // OpenStreetMap tile layer
-            var mapLink = "<a href='http://openstreetmap.org'>OpenStreetMap</a>";
-            L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
-                attribution: "Leaflet &copy; " + mapLink + ", contributors",
-                maxZoom: 18,
-            }).addTo(map);
+        // OpenStreetMap tile layer
+        L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {
+            attribution: "Leaflet &copy; <a href='http://openstreetmap.org'>OpenStreetMap</a>, contributors",
+            maxZoom: 18,
+        }).addTo(map);
 
-            // Coordinates for the routes
-            var routes = {};
-            var markerClusterGroup = L.markerClusterGroup();
-            map.addLayer(markerClusterGroup); // Add the cluster group to the map
+        var routes = {};
+        var markerClusterGroup = L.markerClusterGroup();
+        map.addLayer(markerClusterGroup);
 
-            // Populate the routes object and the route selector
-            const vehicles = [
-                {% for vehicle in vehicles %}
-                {
-                    id: "{{ vehicle.number_plate }}",
-                    start: [{{ vehicle.start_latitude }}, {{ vehicle.start_longitude }}],
-                    end: [{{ vehicle.stop_latitude }}, {{ vehicle.stop_longitude }}],
-                },
-                {% endfor %}
-            ];
+        const vehicles = [
+            {% for vehicle in vehicles %}
+            {
+                id: "{{ vehicle.number_plate }}",
+                start: [{{ vehicle.start_latitude }}, {{ vehicle.start_longitude }}],
+                end: [{{ vehicle.stop_latitude }}, {{ vehicle.stop_longitude }}],
+            },
+            {% endfor %}
+        ];
 
-            vehicles.forEach((vehicle, index) => {
-                routes[vehicle.id] = {
-                    start: vehicle.start,
-                    end: vehicle.end,
-                };
+        vehicles.forEach((vehicle, index) => {
+            routes[vehicle.id] = {
+                start: vehicle.start,
+                end: vehicle.end,
+            };
 
-                // Populate route selector options
-                var option = document.createElement("option");
-                option.value = vehicle.id;
-                option.textContent = "Route " + (index + 1);
-                document.getElementById("routeSelector").appendChild(option);
-            });
+            var option = document.createElement("option");
+            option.value = vehicle.id;
+            option.textContent = "Route " + (index + 1);
+            document.getElementById("routeSelect").appendChild(option);
+        });
 
-            // Initialize routing control
-            var control = L.Routing.control({
-                waypoints: [],
-                routeWhileDragging: true,
-                router: L.Routing.osrmv1({
-                    serviceUrl: "https://router.project-osrm.org/route/v1",
-                }),
-            }).addTo(map);
+        var taxiIcon = L.icon({
+            iconUrl: '{% static "core/img/taxi.png" %}', // Custom ambulance icon
+            iconSize: [70, 70],
+        });
 
-            // Function to update the route based on selection
-            function updateRoute(selectedRoute) {
-                var route = routes[selectedRoute];
-                control.setWaypoints([
-                    L.latLng(route.start[0], route.start[1]), // Start point
-                    L.latLng(route.end[0], route.end[1]), // End point
-                ]);
-                fetchTrafficLights(route.start, route.end); // Fetch traffic lights for the selected route
-            }
+        var marker = L.marker([0, 0], { icon: taxiIcon }).addTo(map); // Initialize marker
 
-            // Handle route selection change with debounce
-            let debounceTimer;
-            document.getElementById("routeSelector").addEventListener("change", function () {
-                clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    updateRoute(this.value);
-                }, 300); // Adjust delay as needed
-            });
+        var control = L.Routing.control({
+            waypoints: [],
+            routeWhileDragging: true,
+            router: L.Routing.osrmv1({
+                serviceUrl: "https://router.project-osrm.org/route/v1",
+            }),
+        }).addTo(map);
 
-            // Initialize with the first route if available
-            if (vehicles.length > 0) {
-                updateRoute(vehicles[0].id);
-            }
+        function updateRoute(selectedRoute) {
+            var route = routes[selectedRoute];
+            control.setWaypoints([
+                L.latLng(route.start[0], route.start[1]),
+                L.latLng(route.end[0], route.end[1]),
+            ]);
+            fetchTrafficLights(route.start, route.end);
+        }
 
-            // Listen for route found event to get the main road name
-            control.on("routesfound", function (e) {
-                var routes = e.routes;
-                if (routes.length > 0) {
-                    var firstInstruction = routes[0].instructions[0].text;
-                    console.log("Main road along the route: " + firstInstruction);
+        document.getElementById("routeSelect").addEventListener("change", function () {
+            updateRoute(this.value);
+        });
+
+        if (vehicles.length > 0) {
+            updateRoute(vehicles[0].id);
+        }
+
+        control.on("routesfound", function (e) {
+            var roadNames = [];
+            e.routes[0].instructions.forEach(function (instruction) {
+                if (instruction.road) {
+                    roadNames.push(instruction.road);
                 }
             });
 
-            // Function to fetch traffic light coordinates from Overpass API
-            function fetchTrafficLights(startCoords, endCoords) {
-                // Clear previous markers from the cluster
-                markerClusterGroup.clearLayers();
+            // Move the ambulance along the route
+            const routeCoordinates = e.routes[0].coordinates; // Get the coordinates of the route
+            moveAmbulance(routeCoordinates); // Pass the coordinates to the moveAmbulance function
 
-                // Calculate bounds based on the selected route's start and end coordinates
-                const southWest = L.latLng(
-                    Math.min(startCoords[0], endCoords[0]),
-                    Math.min(startCoords[1], endCoords[1])
-                );
-                const northEast = L.latLng(
-                    Math.max(startCoords[0], endCoords[0]),
-                    Math.max(startCoords[1], endCoords[1])
-                );
-                const bounds = `${southWest.lat},${southWest.lng},${northEast.lat},${northEast.lng}`;
+            // Store the road names in session storage
+            sessionStorage.setItem('roadNames', JSON.stringify(roadNames));
+            // Open the home page with updated road data
+            window.open('/home/', '_blank');
+        });
 
-                const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node["highway"="traffic_signals"](${bounds});out body;`;
+        function moveAmbulance(routeCoordinates) {
+            let currentIndex = 0; // Start at the first coordinate
 
-                fetch(overpassUrl)
-                    .then((response) => response.json())
-                    .then((data) => {
-                        const trafficLights = data.elements.map((light) => [
-                            light.lat,
-                            light.lon,
-                        ]);
-
-                        // Define a custom icon for the traffic lights
-                        const trafficLightIcon = L.icon({
-                            iconUrl: 'https://www.clipartmax.com/png/middle/56-563826_traffic-light-icons-traffic-signal-icon.png', // Update with your icon path
-                            iconSize: [30, 30], // Size of the icon [width, height]
-                            iconAnchor: [15, 30], // Point of the icon which will correspond to marker's location
-                            popupAnchor: [0, -30], // Point from which the popup should open relative to the iconAnchor
-                        });
-
-                        trafficLights.forEach((coords) => {
-                            const marker = L.marker(coords, { icon: trafficLightIcon }) // Use the custom icon
-                                .addTo(markerClusterGroup)
-                                .bindPopup("Traffic Light");
-
-                            // Add a click event listener to the marker
-                            marker.on("click", function () {
-                                // Execute the script by sending a request to the Django backend
-                                fetch("{% url 'execute-script' %}", {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json",
-                                        "X-CSRFToken": getCsrfToken(), // Ensure CSRF token for POST requests
-                                    },
-                                    body: JSON.stringify({
-                                        latitude: coords[0],
-                                        longitude: coords[1],
-                                    }),
-                                })
-                                    .then((response) => response.json())
-                                    .then((data) => {
-                                        console.log("Script executed successfully:", data);
-
-                                        // Automatically open a new tab if a redirect URL is provided
-                                        if (data.redirect_url) {
-                                            window.open(data.redirect_url, '_blank'); // Open in a new tab
-                                        }
-                                    })
-                                    .catch((error) =>
-                                        console.error("Error executing script:", error)
-                                    );
-                            });
-                        });
-                    })
-                    .catch((error) =>
-                        console.error("Error fetching traffic lights:", error)
-                    );
+            // Function to move the ambulance
+            function animateAmbulance() {
+                if (currentIndex < routeCoordinates.length) {
+                    marker.setLatLng(routeCoordinates[currentIndex]);
+                    currentIndex++;
+                    setTimeout(animateAmbulance, 1000); // Move every second
+                }
             }
 
-            // Function to get CSRF token for POST requests (Django CSRF protection)
-            function getCsrfToken() {
-                return document.querySelector('[name=csrfmiddlewaretoken]').value;
-            }
-        </script>
-    </body>
+            // Start the animation
+            animateAmbulance();
+        }
+
+        function fetchTrafficLights(startCoords, endCoords) {
+            markerClusterGroup.clearLayers();
+
+            const southWest = L.latLng(
+                Math.min(startCoords[0], endCoords[0]),
+                Math.min(startCoords[1], endCoords[1])
+            );
+            const northEast = L.latLng(
+                Math.max(startCoords[0], endCoords[0]),
+                Math.max(startCoords[1], endCoords[1])
+            );
+            const bounds = `${southWest.lat},${southWest.lng},${northEast.lat},${northEast.lng}`;
+
+            const overpassUrl = `https://overpass-api.de/api/interpreter?data=[out:json];node["highway"="traffic_signals"](${bounds});out body;`;
+
+            fetch(overpassUrl)
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log(`Fetched ${data.elements.length} traffic lights.`);
+                    const trafficLights = data.elements.map((light) => [
+                        light.lat,
+                        light.lon,
+                    ]);
+
+                    if (trafficLights.length === 0) {
+                        console.log("No traffic lights found in the specified area.");
+                    } else {
+                        console.log("Traffic lights coordinates:", trafficLights);
+                    }
+
+                    const trafficLightIcon = L.icon({
+                        iconUrl: 'https://www.clipartmax.com/png/middle/56-563826_traffic-light-icons-traffic-signal-icon.png',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30],
+                        popupAnchor: [0, -30],
+                    });
+
+                    trafficLights.forEach((coords) => {
+                        const marker = L.marker(coords, { icon: trafficLightIcon })
+                            .addTo(markerClusterGroup)
+                            .bindPopup("Traffic Light");
+
+                        marker.on("click", function () {
+                            executeTrafficLightScript(coords);
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error fetching traffic lights:", error);
+                    alert("Failed to load traffic lights. Please try again later.");
+                });
+        }
+
+        function executeTrafficLightScript(coords) {
+            fetch("{% url 'execute-script' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken(),
+                },
+                body: JSON.stringify({
+                    latitude: coords[0],
+                    longitude: coords[1],
+                }),
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log("Script executed successfully:", data);
+                if (data.redirect_url) {
+                    window.open(data.redirect_url, '_blank');
+                }
+            })
+            .catch((error) => console.error("Error executing script:", error));
+        }
+
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+    </script>
+</body>
 </html>

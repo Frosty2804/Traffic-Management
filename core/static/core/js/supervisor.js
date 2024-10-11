@@ -1,119 +1,81 @@
 document.addEventListener("DOMContentLoaded", function () {
   checkLoginStatus();
 
-  // Logout functionality
   document
     .getElementById("logoutButton")
     .addEventListener("click", function () {
-      localStorage.removeItem("jwt");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
       window.location.href = "/home";
     });
 
-  // Handle vehicle form submission (POST)
   document
     .getElementById("vehicleForm")
     .addEventListener("submit", function (event) {
       event.preventDefault();
+      const numberPlate = document.getElementById("number_plate").value;
       const startLocation = document.getElementById("start_location").value;
-      const destination = document.getElementById("destination").value;
+      const endLocation = document.getElementById("end_location").value;
 
-      // Look up coordinates for start location
-      fetch(`/api/locations/?query=${encodeURIComponent(startLocation)}`)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Failed to fetch start location coordinates");
-          }
-          return response.json();
-        })
-        .then((startData) => {
-          // Log startData for debugging
-          console.log("Start Location Data:", startData);
+      Promise.all([
+        fetchCoordinates(startLocation),
+        fetchCoordinates(endLocation),
+      ])
+        .then(([startData, endData]) => {
+          const data = {
+            number_plate: numberPlate,
+            start_latitude: startData.lat,
+            start_longitude: startData.lon,
+            stop_latitude: endData.lat,
+            stop_longitude: endData.lon,
+          };
 
-          // Set start coordinates
-          document.getElementById("start_latitude").value = startData.latitude;
-          document.getElementById("start_longitude").value =
-            startData.longitude;
-
-          // Look up coordinates for destination
-          return fetch(
-            `/api/locations/?query=${encodeURIComponent(destination)}`,
-          );
-        })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Failed to fetch destination coordinates");
-          }
-          return response.json();
-        })
-        .then((destinationData) => {
-          // Log destinationData for debugging
-          console.log("Destination Location Data:", destinationData);
-
-          // Set destination coordinates
-          document.getElementById("stop_latitude").value =
-            destinationData.latitude;
-          document.getElementById("stop_longitude").value =
-            destinationData.longitude;
-
-          // Log coordinates before submission
-          console.log("Coordinates Before Submission:", {
-            start_latitude: startData.latitude,
-            start_longitude: startData.longitude,
-            stop_latitude: destinationData.latitude,
-            stop_longitude: destinationData.longitude,
-          });
-
-          // Validate coordinates
-          if (
-            !startData.latitude ||
-            !startData.longitude ||
-            !destinationData.latitude ||
-            !destinationData.longitude
-          ) {
-            alert("Invalid coordinates received. Please check your locations.");
-            return;
-          }
-
-          // Prepare data for submission
-          const formData = new FormData(document.getElementById("vehicleForm"));
-          const data = Object.fromEntries(formData);
-
-          // Add coordinates to the data object
-          data.start_latitude = startData.latitude;
-          data.start_longitude = startData.longitude;
-          data.stop_latitude = destinationData.latitude;
-          data.stop_longitude = destinationData.longitude;
-
-          // Submit the vehicle form
-          fetch("/api/vehicles/", {
+          return fetch("/api/vehicles/", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
             },
             body: JSON.stringify(data),
-          })
-            .then((response) => {
-              if (response.ok) {
-                alert("Vehicle entry created successfully!");
-                window.location.reload(); // Reload the page to reflect changes
-              } else {
-                return response.json().then((errorData) => {
-                  alert(
-                    "Failed to create vehicle entry: " +
-                      JSON.stringify(errorData),
-                  );
-                });
-              }
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-              alert("An error occurred while creating the vehicle entry.");
+          });
+        })
+        .then((response) => {
+          if (response.ok) {
+            alert("Vehicle entry created successfully!");
+            window.location.reload();
+          } else {
+            return response.json().then((errorData) => {
+              alert(
+                "Failed to create vehicle entry: " + JSON.stringify(errorData),
+              );
             });
+          }
         })
         .catch((error) => {
           console.error("Error:", error);
-          alert(error.message);
+          alert("An error occurred while creating the vehicle entry.");
         });
     });
+
+  function fetchCoordinates(locationName) {
+    const accessKey = "24d74a23652290361b43cc60a6499e4a";
+    const url = `https://api.positionstack.com/v1/forward?access_key=${accessKey}&query=${locationName}`;
+
+    return fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.data && data.data.length > 0) {
+          return { lat: data.data[0].latitude, lon: data.data[0].longitude };
+        } else {
+          throw new Error("Location not found");
+        }
+      });
+  }
+
+  function checkLoginStatus() {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      window.location.href = "/auth/login/";
+    }
+  }
 });
