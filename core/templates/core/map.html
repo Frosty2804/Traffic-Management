@@ -36,13 +36,19 @@
 </head>
 
 <body>
-    <div id="routeSelector">
+    <div id="routeSelector" style="margin-top: 600px; margin-left: 20px;">
         <label for="routeSelect">Select a Route:</label>
         <select id="routeSelect">
             <!-- Options will be populated dynamically -->
         </select>
     </div>
     <div id="map"></div>
+
+    <a href="{% url 'supervisor' %}" style="position: fixed; bottom: 20px; right: 20px; background-color: #007BFF; color: white; padding: 10px 15px; border: none; border-radius: 5px; text-decoration: none; font-weight: bold; z-index: 1001;">
+        Go to Supervisor Dashboard
+    </a>
+    
+    
 
     <!-- Django Template CSRF Token -->
     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
